@@ -5,6 +5,7 @@ module Rsc::Arena
 
     def initialize(bots)
       @bots = bots
+      @max_bet = 0
     end
 
     def play!
@@ -19,6 +20,8 @@ module Rsc::Arena
       @higher_card = nil
       @winners = []
       phase(:bet)
+      puts "Max bet is #{@max_bet}"
+      phase(:resolve_bet)
       puts "Total Bet:" + @bots.map {|bot| [bot.name, bot.bet] }.inspect
       phase(:resolve)
       puts "Winners: " + winners.map {|winner| winner.name}.inspect
@@ -44,6 +47,13 @@ module Rsc::Arena
     end
 
     # phases
+    def phase_resolve_bet(bot)
+      resto = @max_bet - (bot.bet - ANTE)
+      puts "#{bot.name} should add: #{resto}"
+      bot.bet += resto
+      if (bot.bet > bot.chips) then bot.bet = bot.chips end
+    end
+    
     def phase_ante(bot)
       bot.bet = bot.chips >= ante ? ante : bot.chips
       bot.notify_ante_payed(bot.bet)
@@ -59,9 +69,10 @@ module Rsc::Arena
 
     def phase_bet(bot)
       bet = bot.ask_for_bet(@previous_choices)
-      puts "\t* #{bot.name} adds #{bet}"
+      puts "\t* #{bot.name} wants to bet #{bet}"
       @previous_choices << [bot.name, bet]
       bot.bet += bet
+      if (bet > @max_bet) then @max_bet = bet end
     end
 
     def opponents(bot)
